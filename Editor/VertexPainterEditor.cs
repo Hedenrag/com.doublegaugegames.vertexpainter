@@ -52,29 +52,32 @@ public class VertexPainterEditor : Editor
         {
             EditorGUILayout.HelpBox("Mesh assets are not editable, if you want to keep the changes make a copy", MessageType.Warning);
         }
-        base.OnInspectorGUI();
+        t.paint = GUILayout.Toggle(t.paint, EditorGUIUtility.TrTextContent("Paint", null), "Button");
+
+        t.paintColor = EditorGUILayout.ColorField("Color", t.paintColor);
+        t.paintRadius = EditorGUILayout.FloatField("Paint Radius", t.paintRadius);
+
         if (GUILayout.Button("Create new Mesh"))
         {
-            var mesh = Instantiate(t.meshFilter.sharedMesh);
-            t.meshFilter.sharedMesh = mesh;
+            t.meshFilter.sharedMesh = Instantiate(t.meshFilter.sharedMesh);
         }
         EditorGUILayout.HelpBox("this path expects a path following the following: \nAssets/folders/to/your/destination/nameOfAsset.asset", MessageType.Info);
         meshPath = GUILayout.TextField(meshPath);
-        
+
         if (GUILayout.Button(new GUIContent("Save Mesh at path", "Saves a new asset with your mesh at the indicated path")))
         {
             AssetDatabase.CreateAsset(t.meshFilter.sharedMesh, meshPath);
         }
     }
-
+        
     bool CheckIsMeshEditable()
     {
         string path = AssetDatabase.GetAssetPath(t.meshFilter.sharedMesh);
         var len = path.Length;
         if (len == 0) return true;
         const string assetExtension = ".asset";
-        if(len <= assetExtension.Length) return false;
-        if (path[(len-assetExtension.Length) .. (len)] != assetExtension) return false;
+        if (len <= assetExtension.Length) return false;
+        if (path[(len - assetExtension.Length)..(len)] != assetExtension) return false;
         return true;
     }
 
@@ -96,6 +99,17 @@ public class VertexPainterEditor : Editor
         if (!t.paint) return; //return if we have not painting enabled
         if (Event.current.alt) return; //return if alt is pressedto allow camera rotation
 
+        if (Event.current.shift)// if shift is pressed resize brush
+        {
+            if ((Event.current.type == EventType.MouseDown || Event.current.type == EventType.MouseDrag) && Event.current.button == 0)//Duplicated since we can resize without beeing on themesh
+            {
+                var delta = Event.current.delta;
+                t.paintRadius += (delta.x - delta.y)*t.paintRadius*0.03f;
+                t.paintRadius = Mathf.Max(t.paintRadius, 0.001f);
+                Event.current.Use(); // if we resize we do not paint
+            }
+        }
+
         //Get the hit point
         Ray ray = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition); //Get the ray from mouse
         object[] rayMeshParameters = new object[] { ray, t.meshFilter.sharedMesh, t.transform.localToWorldMatrix, null }; //get the raycast parameters
@@ -106,16 +120,9 @@ public class VertexPainterEditor : Editor
             //Draw the gizmo
             Handles.DrawWireDisc(hit.point, hit.normal, t.paintRadius);
 
-            //Start of optimization problem
+
             if (!((Event.current.type == EventType.MouseDown || Event.current.type == EventType.MouseDrag) && Event.current.button == 0)) return;//return if we are not actively painting
 
-            if (Event.current.shift)// if shift is pressed resize brush
-            {
-                var delta = Event.current.delta;
-                t.paintRadius += delta.x + delta.y;
-
-                return;// if we resize we do not paint
-            }
 
             //paint the vertex
 
@@ -137,6 +144,7 @@ public class VertexPainterEditor : Editor
             //for each vertex we check distance to see if it is between paint distance
             float sqrPaintRadius = t.paintRadius * t.paintRadius;
 #if !GPU
+            //Slow CPU version
             for (int i = 0; i < t.meshFilter.sharedMesh.vertexCount; i++)
             {
                 Vector3 worldVertex = t.transform.localToWorldMatrix.MultiplyPoint3x4(t.meshFilter.sharedMesh.vertices[i]);//convert vertex to world space
@@ -147,6 +155,7 @@ public class VertexPainterEditor : Editor
                 }
             }
 #else
+            //Fast GPU version
             {
                 var mesh = t.meshFilter.sharedMesh;
                 var vertices = mesh.vertices;
@@ -178,7 +187,7 @@ public class VertexPainterEditor : Editor
             }
 #endif
             t.meshFilter.sharedMesh.SetColors(vertColors);//set the colors back
-            //End of optimization problem
+
             Event.current.Use(); //use the event to not misuse
         }
     }
