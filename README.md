@@ -1,6 +1,6 @@
-# Fast Vertex Painter
+# Vertex Painter
 
-**Fast Vertex Painter** is a lightweight Unity Editor tool for painting vertex colors directly onto meshes.
+**Vertex Painter** is a lightweight Unity Editor tool for painting vertex colors directly onto meshes.
 
 ## Installation
 
