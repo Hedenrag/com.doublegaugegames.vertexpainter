@@ -1,0 +1,8 @@
+{
+    "name": "com.doublegaugegames.vertexpainter",
+    "version": "1.0.0",
+    "displayName": "Vertex Painter",
+    "description": "Tool to paint the vertices of meshes.",
+    "dependencies": {
+    }
+  }
