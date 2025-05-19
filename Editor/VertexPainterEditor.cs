@@ -17,6 +17,11 @@ public class VertexPainterEditor : Editor
 
     string meshPath = null;
 
+    bool red = true;
+    bool green = true;
+    bool blue = true;
+    bool alpha = true;
+
     private void OnEnable()
     {
         t = target as VertexPainter;
@@ -53,11 +58,16 @@ public class VertexPainterEditor : Editor
             EditorGUILayout.HelpBox("Mesh assets are not editable, if you want to keep the changes make a copy", MessageType.Warning);
         }
         t.paint = GUILayout.Toggle(t.paint, EditorGUIUtility.TrTextContent("Paint", null), "Button");
-
+        GUILayout.BeginHorizontal();
+        red = GUILayout.Toggle(red, "R");
+        green = GUILayout.Toggle(green, "G");
+        blue = GUILayout.Toggle(blue, "B");
+        alpha = GUILayout.Toggle(alpha, "A");
+        GUILayout.EndHorizontal();
         t.paintColor = EditorGUILayout.ColorField("Color", t.paintColor);
         t.paintRadius = EditorGUILayout.FloatField("Paint Radius", t.paintRadius);
 
-        if (GUILayout.Button("Create new Mesh"))
+        if (GUILayout.Button("Create Mesh copy"))
         {
             t.meshFilter.sharedMesh = Instantiate(t.meshFilter.sharedMesh);
         }
@@ -142,16 +152,20 @@ public class VertexPainterEditor : Editor
                 vertColors = newColors;
             }
             //for each vertex we check distance to see if it is between paint distance
-            float sqrPaintRadius = t.paintRadius * t.paintRadius;
 #if !GPU
             //Slow CPU version
+            float sqrPaintRadius = t.paintRadius * t.paintRadius;
             for (int i = 0; i < t.meshFilter.sharedMesh.vertexCount; i++)
             {
                 Vector3 worldVertex = t.transform.localToWorldMatrix.MultiplyPoint3x4(t.meshFilter.sharedMesh.vertices[i]);//convert vertex to world space
                 var dist = Vector3.SqrMagnitude(worldVertex - hit.point);
                 if (dist < sqrPaintRadius)//Check if vertex is between paint distance (sqrt=faster)
                 {
-                    vertColors[i] = t.paintColor;
+                    if(red) vertColors[i].r = t.paintColor.r;
+                    if(green) vertColors[i].g = t.paintColor.g;
+                    if(blue) vertColors[i].b = t.paintColor.b;
+                    if(alpha) vertColors[i].a = t.paintColor.a;
+                    //vertColors[i] = t.paintColor;
                 }
             }
 #else
@@ -169,6 +183,11 @@ public class VertexPainterEditor : Editor
 
                 int kernel = paintShader.FindKernel("PaintVertices");
 
+                paintShader.SetBool("_red", red);
+                paintShader.SetBool("_green", green);
+                paintShader.SetBool("_blue", blue);
+                paintShader.SetBool("_alpha", alpha);
+
                 paintShader.SetBuffer(kernel, "_VertexColors", vertColorBuffer);
                 paintShader.SetBuffer(kernel, "_Vertices", vertexPosBuffer);
 
@@ -185,8 +204,9 @@ public class VertexPainterEditor : Editor
                 vertexPosBuffer.Dispose();
                 vertColorBuffer.Dispose();
             }
+            Debug.Log("Painted");
 #endif
-            t.meshFilter.sharedMesh.SetColors(vertColors);//set the colors back
+            t.meshFilter.sharedMesh.colors = (vertColors);//set the colors back
 
             Event.current.Use(); //use the event to not misuse
         }

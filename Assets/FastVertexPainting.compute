@@ -1,31 +1,47 @@
-// Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel PaintVertices
 
-// Create a RenderTexture with enableRandomWrite flag and set it
-// with cs.SetTexture
 RWStructuredBuffer<float4> _VertexColors;
 StructuredBuffer<float3> _Vertices;
+
+bool _red;
+bool _green;
+bool _blue;
+bool _alpha;
 
 float3 _HitPoint;
 float _PaintRadius;
 float4 _PaintColor;
 float4x4 _LocalToWorldVertex;
 
-[numthreads(64,1,1)]
-void PaintVertices (uint3 id : SV_DispatchThreadID)
+[numthreads(64, 1, 1)]
+void PaintVertices(uint3 id : SV_DispatchThreadID)
 {
     uint index = id.x;
-
-    //uint count, vertSize;
-    //_Vertices.GetDimensions(count, vertSize);
+    
     uint count = _Vertices.Length;
     if (index >= count)
         return;
 
-    float3 vertex = mul(_LocalToWorldVertex, float4(_Vertices[index], 1.0));
+    float3 vertex = mul((_LocalToWorldVertex), float4(_Vertices[index], 1.0)).xyz;
     float dist = distance(vertex, _HitPoint);
     if (dist <= _PaintRadius)
     {
-        _VertexColors[index] = _PaintColor;
+        if (_red)
+        {
+            _VertexColors[index].x = _PaintColor.x;
+        }
+        if (_green)
+        {
+            _VertexColors[index].y = _PaintColor.y;
+        }
+        
+        if (_blue)
+        {
+            _VertexColors[index].z = _PaintColor.z;
+        }
+        if (_alpha)
+        {
+            _VertexColors[index].w = _PaintColor.w;
+        }
     }
 }
