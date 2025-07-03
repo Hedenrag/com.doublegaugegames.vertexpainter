@@ -27,6 +27,8 @@
    - Left-click and drag to paint.
    - Hold `Shift` to resize the brush.
 
+  <img src="ReadmeImgs/UseGuide.png" alt="image" style="max-width: 750px; height: auto;">
+
 ## Limitations
 
 - Only supports `MeshFilter` components (no `SkinnedMeshRenderer` support).

@@ -13,8 +13,6 @@ public class VertexPainterEditor : Editor
     VertexPainter t;
     ComputeShader paintShader;
 
-    bool modified = false;
-
     string meshPath = null;
 
     bool red = true;
@@ -204,7 +202,6 @@ public class VertexPainterEditor : Editor
                 vertexPosBuffer.Dispose();
                 vertColorBuffer.Dispose();
             }
-            Debug.Log("Painted");
 #endif
             t.meshFilter.sharedMesh.colors = (vertColors);//set the colors back
 
